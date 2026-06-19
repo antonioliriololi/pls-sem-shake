@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animador de Hipótesis · Modelo Estructural (PLS-SEM)</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Arial,sans-serif;
+  background:#f4f6f9;
+  color:#1a2433;
+  min-height:100vh;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:24px 16px;
+}
+.wrap{max-width:1180px;width:100%}
+
+.step-indicator{
+  display:flex;gap:8px;margin-bottom:14px;font-size:.78rem;color:#9aa5b5;
+}
+.step-indicator .step{padding:4px 12px;border-radius:999px;background:#eef2f8}
+.step-indicator .step.active{background:#1a73e8;color:#fff;font-weight:700}
+
+.card{
+  background:#ffffff;
+  border:1px solid #dde3ec;
+  border-radius:14px;
+  padding:32px 36px;
+}
+.card h1{font-size:1.45rem;margin-bottom:4px}
+.card .sub{font-size:.85rem;color:#6b7686;margin-bottom:24px}
+
+.field{margin-bottom:16px}
+.field label{
+  display:block;
+  font-size:.72rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#6b7686;
+  margin-bottom:6px;
+}
+.field input[type=text],.field input[type=number],.field select{
+  width:100%;
+  background:#f7f9fc;
+  border:1.5px solid #cdd6e3;
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:.95rem;
+  font-family:inherit;
+  color:#1a2433;
+}
+.field input:focus,.field select:focus{outline:none;border-color:#1a73e8}
+
+/* ===== PASO A: lista simple de nombres ===== */
+.name-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.name-row{display:flex;gap:8px;align-items:center}
+.name-row input{flex:1}
+.rm-btn{
+  width:34px;height:34px;border-radius:8px;border:1px solid #e2bcbc;flex-shrink:0;
+  background:#fdecea;color:#c0392b;cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+}
+.rm-btn:hover{background:#fadcd9}
+
+/* ===== PASO B: filas de pares/hipótesis ===== */
+.sig-selector{
+  display:flex;gap:14px;align-items:center;background:#eef4ff;border:1.5px solid #c7dbfb;
+  border-radius:10px;padding:14px 16px;margin-bottom:20px;flex-wrap:wrap;
+}
+.sig-selector .tag{font-size:.78rem;font-weight:700;color:#1a4f9c}
+.radio-opt{display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer}
+.radio-opt input{accent-color:#1a73e8}
+
+.pair-row{
+  background:#f7f9fc;border:1px solid #e2e8f1;border-radius:10px;padding:14px;margin-bottom:12px;
+}
+.pair-row .pr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pair-row .h-label{font-weight:800;color:#1a73e8;font-size:.85rem;min-width:34px}
+.pair-row .arrow-to{font-size:.85rem;color:#6b7686;white-space:nowrap}
+.pair-row select{flex:1}
+.pair-row .pr-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pair-row .pr-grid .field{margin-bottom:0}
+.pair-row .pr-hyp{margin-top:10px}
+.pair-row .pr-hyp input{font-size:.82rem}
+
+/* ===== BOTONES ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 22px;border-radius:9px;border:none;
+  font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:.15s;
+}
+.btn-primary{background:#1a73e8;color:#fff}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-secondary{background:#eef2f8;color:#1a2433;border:1px solid #dde3ec}
+.btn-secondary:hover{background:#e3e9f2}
+.btn-ghost{background:transparent;color:#6b7686;border:1px solid #dde3ec}
+.btn-ghost:hover{color:#1a2433;border-color:#1a73e8}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn-sm{padding:7px 14px;font-size:.78rem;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.err{font-size:.82rem;color:#c0392b;background:#fdecea;border:1px solid #e74c3c;padding:8px 12px;border-radius:7px;display:none;margin-top:10px}
+
+/* ===== DIAGRAM SCREEN ===== */
+.diagscreen{display:none}
+.diagscreen.on{display:block}
+.diag-card{
+  background:#ffffff;
+  border:1px solid #dde3ec;
+  border-radius:14px;
+  padding:24px 26px;
+}
+.diag-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.diag-title{font-size:1.15rem;font-weight:700}
+.diag-sub{font-size:.78rem;color:#6b7686;margin-top:2px}
+
+.status-bar{
+  background:#eef4ff;
+  border:1px solid #c7dbfb;
+  border-radius:9px;
+  padding:10px 16px;
+  font-size:.85rem;
+  color:#1a4f9c;
+  font-weight:600;
+  margin:14px 0;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+}
+
+.svg-wrap{
+  width:100%;
+  overflow-x:auto;
+  border:1px solid #eef1f6;
+  border-radius:10px;
+  background:#fff;
+}
+
+.controls-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+
+.legend-strength{
+  display:flex;gap:18px;flex-wrap:wrap;
+  margin-top:16px;padding-top:14px;border-top:1px solid #eef1f6;
+  font-size:.76rem;color:#6b7686;
+}
+.legend-strength b{color:#1a2433}
+
+.color-legend{margin-top:18px;padding-top:16px;border-top:1px solid #eef1f6}
+.color-legend .cl-title{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6b7686;margin-bottom:8px}
+.color-legend .cl-row{display:flex;align-items:center;gap:12px}
+.color-legend .cl-bar{flex:1;height:14px;border-radius:7px;background:linear-gradient(to right, rgb(255,235,235), rgb(230,0,0));border:1px solid #e2e8f1}
+.color-legend .cl-label{font-size:.78rem;font-weight:700;color:#3a4254;white-space:nowrap}
+
+.sig-legend{
+  display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #eef1f6;
+  font-size:.78rem;color:#3a4254;
+}
+.sig-legend .item{display:flex;align-items:center;gap:8px}
+.sig-legend .swatch-line{width:34px;height:0;border-top:3px solid #000}
+.sig-legend .swatch-line.dashed{border-top:3px dashed #9aa5b5}
+
+.foot{font-size:.72rem;color:#9aa5b5;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="step-indicator" id="step-indicator">
+  <span class="step" id="ind-a">Paso A · Variables</span>
+  <span class="step" id="ind-b">Paso B · Pares e hipótesis</span>
+  <span class="step" id="ind-c">Diagrama</span>
+</div>
+
+<!-- ===== PASO A: VARIABLES ===== -->
+<div class="card" id="screen-a">
+  <h1>🧩 Animador de hipótesis — Modelo estructural (PLS-SEM)</h1>
+  <div class="sub">Paso A: registra los nombres de tus variables (sin números todavía).</div>
+
+  <div class="field">
+    <label for="inp-dep-name">Variable dependiente</label>
+    <input type="text" id="inp-dep-name" value="Educational Quality">
+  </div>
+
+  <div class="field">
+    <label>Variables independientes</label>
+    <div class="name-list" id="indep-name-list"></div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn btn-secondary btn-sm" onclick="addIndepNameRow()">+Agregar Variable</button>
+      <button class="btn btn-ghost btn-sm" onclick="removeLastIndepNameRow()">-Quitar última variable</button>
+    </div>
+  </div>
+
+  <div class="err" id="err-a"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="irAPasoB()">Continuar a Paso B →</button>
+    <button class="btn btn-ghost" onclick="cargarEjemplo()">📌 Cargar ejemplo (captura compartida)</button>
+  </div>
+</div>
+
+<!-- ===== PASO B: PARES E HIPÓTESIS ===== -->
+<div class="card" id="screen-b" style="display:none">
+  <h1>Paso B — Pares de hipótesis</h1>
+  <div class="sub">Selecciona de la lista la variable independiente de cada par. Cada fila representa una hipótesis (independiente → <span id="dep-name-echo">—</span>).</div>
+
+  <div class="sig-selector">
+    <span class="tag">Mostrar significancia con:</span>
+    <label class="radio-opt"><input type="radio" name="sig-mode" value="p" checked onchange="onSigModeChange()"> p-value (significativo si p &lt; 0.05)</label>
+    <label class="radio-opt"><input type="radio" name="sig-mode" value="t" onchange="onSigModeChange()"> t-value (significativo si |t| ≥ 1.96)</label>
+  </div>
+
+  <div id="pair-list"></div>
+  <button class="btn btn-secondary btn-sm" onclick="addPairRow()">+ Agregar par / hipótesis</button>
+
+  <div class="err" id="err-b"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generarDiagrama()">🧩 Generar diagrama →</button>
+    <button class="btn btn-ghost" onclick="volverAPasoA()">← Volver a Paso A</button>
+  </div>
+</div>
+
+<!-- ===== PANTALLA: DIAGRAMA ===== -->
+<div class="diagscreen" id="screen-diagram">
+  <div class="diag-card">
+    <div class="diag-top">
+      <div>
+        <div class="diag-title" id="diag-title-text">—</div>
+        <div class="diag-sub">Modelo estructural — coeficientes de ruta (β) y significancia</div>
+      </div>
+      <div class="btn-row" style="margin-top:0">
+        <button class="btn btn-ghost" onclick="volverAPasoBDesdeDiagrama()">← Editar pares</button>
+      </div>
+    </div>
+
+    <div class="status-bar" id="status-bar">Pulsa "Reproducir secuencia" para iniciar la animación de las hipótesis significativas.</div>
+
+    <div class="svg-wrap">
+      <svg id="diagram-svg" width="1100" height="600" viewBox="0 0 1100 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="controls-row">
+      <button class="btn btn-primary" id="play-seq-btn" onclick="reproducirSecuencia()">▶ Reproducir secuencia</button>
+      <button class="btn btn-secondary" id="loop-btn" onclick="toggleLoop()">🔁 Loop: Desactivado</button>
+      <select id="effect-select" class="btn btn-secondary" style="cursor:pointer">
+        <option value="scale">Efecto: Pulso de escala</option>
+        <option value="shake-h">Efecto: Shake horizontal</option>
+        <option value="shake-circular">Efecto: Shake circular</option>
+      </select>
+      <button class="btn btn-ghost" onclick="reiniciarDiagrama()">↺ Reset</button>
+    </div>
+
+    <div class="sig-legend">
+      <div class="item"><span class="swatch-line"></span> Significativo (se anima)</div>
+      <div class="item"><span class="swatch-line dashed"></span> No significativo (no se anima)</div>
+    </div>
+
+    <div class="legend-strength">
+      <span>🔴 <b>Velocidad de viaje</b> y <b>vibración</b> del círculo de llegada son proporcionales a la magnitud del coeficiente β de cada hipótesis significativa.</span>
+    </div>
+
+    <div class="color-legend">
+      <div class="cl-title">Color de las variables independientes según su coeficiente β (solo si es significativo)</div>
+      <div class="cl-row">
+        <span class="cl-label">Efecto bajo</span>
+        <div class="cl-bar"></div>
+        <span class="cl-label">Efecto alto</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Animador de hipótesis · Modelo estructural PLS-SEM</div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let DEP_NAME = '';
+let INDEP_NAMES = [];
+let SIG_MODE = 'p'; // 'p' | 't'
+let CFG = null;      // { depName, sigMode, pairs: [{label, indepName, beta, stat, significant}] }
+let isPlaying = false;
+let loopActive = false;
+let playToken = 0;
+
+function setStep(active){
+  ['ind-a','ind-b','ind-c'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById(active).classList.add('active');
+}
+setStep('ind-a');
+
+// ============================================================
+// COLOR ROJO PROPORCIONAL AL COEFICIENTE β
+// ============================================================
+function betaToColor(beta){
+  const norm = Math.max(0, Math.min(1, Math.abs(beta)));
+  const start = {r:255, g:235, b:235};
+  const end   = {r:230, g:0,   b:0};
+  const r = Math.round(start.r + (end.r-start.r)*norm);
+  const g = Math.round(start.g + (end.g-start.g)*norm);
+  const b = Math.round(start.b + (end.b-start.b)*norm);
+  return `rgb(${r},${g},${b})`;
+}
+const GRAY_FILL = '#d8dce2';
+
+// ============================================================
+// PASO A — LISTA DE NOMBRES
+// ============================================================
+function addIndepNameRow(value){
+  const list = document.getElementById('indep-name-list');
+  if(list.children.length >= 8) return;
+  const row = document.createElement('div');
+  row.className = 'name-row';
+  row.innerHTML = `
+    <input type="text" class="indep-name-input" placeholder="Nombre de la variable independiente" value="${value !== undefined ? value : ''}">
+    <button class="rm-btn" onclick="this.closest('.name-row').remove()" title="Quitar">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function removeLastIndepNameRow(){
+  const list = document.getElementById('indep-name-list');
+  if(list.lastElementChild) list.removeChild(list.lastElementChild);
+}
+
+function cargarEjemplo(){
+  document.getElementById('inp-dep-name').value = 'Educational Quality';
+  document.getElementById('indep-name-list').innerHTML = '';
+  addIndepNameRow('Spiritual Education');
+  addIndepNameRow('Teacher Professionalism');
+  addIndepNameRow('School Climate');
+  EXAMPLE_LOADED = true;
+}
+let EXAMPLE_LOADED = false;
+
+cargarEjemplo(); // el modelo compartido aparece precargado por defecto, incluyendo los pares del Paso B
+
+function irAPasoB(){
+  const errBox = document.getElementById('err-a');
+  errBox.style.display = 'none';
+
+  const depName = document.getElementById('inp-dep-name').value.trim();
+  if(!depName){
+    errBox.textContent = '⚠ Ingresa el nombre de la variable dependiente.';
+    errBox.style.display = 'block';
+    return;
+  }
+  const names = [...document.querySelectorAll('.indep-name-input')].map(i=>i.value.trim()).filter(Boolean);
+  if(names.length === 0){
+    errBox.textContent = '⚠ Agrega al menos una variable independiente.';
+    errBox.style.display = 'block';
+    return;
+  }
+  const dupSet = new Set(names);
+  if(dupSet.size !== names.length){
+    errBox.textContent = '⚠ Hay nombres de variables independientes repetidos.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  DEP_NAME = depName;
+  INDEP_NAMES = names;
+
+  document.getElementById('screen-a').style.display = 'none';
+  document.getElementById('screen-b').style.display = 'block';
+  document.getElementById('dep-name-echo').textContent = DEP_NAME;
+  setStep('ind-b');
+
+  buildPairListUI();
+}
+
+function volverAPasoA(){
+  document.getElementById('screen-b').style.display = 'none';
+  document.getElementById('screen-a').style.display = 'block';
+  setStep('ind-a');
+}
+
+// ============================================================
+// PASO B — PARES / HIPÓTESIS
+// ============================================================
+function onSigModeChange(){
+  SIG_MODE = document.querySelector('input[name="sig-mode"]:checked').value;
+  document.querySelectorAll('.pair-stat-label').forEach(el=>{
+    el.textContent = SIG_MODE === 'p' ? 'p-value' : 't-value';
+  });
+  document.querySelectorAll('.pair-stat-input').forEach(el=>{
+    el.placeholder = SIG_MODE === 'p' ? 'Ej. 0.001' : 'Ej. 4.215';
+  });
+}
+
+function buildPairListUI(){
+  const list = document.getElementById('pair-list');
+  list.innerHTML = '';
+
+  if(EXAMPLE_LOADED && INDEP_NAMES.length === 3){
+    // Precarga de ejemplo coherente con la captura: SE no significativo, TP y SC significativos
+    addPairRow('Spiritual Education', 0.008, '0.870');
+    addPairRow('Teacher Professionalism', 0.318, '0.002');
+    addPairRow('School Climate', 0.568, '0.000');
+  } else {
+    addPairRow();
+  }
+}
+
+function addPairRow(presetName, presetBeta, presetStat){
+  const list = document.getElementById('pair-list');
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.className = 'pair-row';
+
+  const options = INDEP_NAMES.map(n=>`<option value="${n}" ${n===presetName?'selected':''}>${n}</option>`).join('');
+
+  row.innerHTML = `
+    <div class="pr-top">
+      <span class="h-label">H${idx+1}</span>
+      <select class="pair-indep-select">${options}</select>
+      <span class="arrow-to">→ ${DEP_NAME}</span>
+      <button class="rm-btn" onclick="this.closest('.pair-row').remove(); relabelPairs();" title="Quitar">✕</button>
+    </div>
+    <div class="pr-grid">
+      <div class="field">
+        <label>Coeficiente β</label>
+        <input type="number" class="pair-beta-input" step="0.001" placeholder="Ej. 0.318" value="${presetBeta !== undefined ? presetBeta : ''}">
+      </div>
+      <div class="field">
+        <label class="pair-stat-label">${SIG_MODE === 'p' ? 'p-value' : 't-value'}</label>
+        <input type="number" class="pair-stat-input" step="0.0001" placeholder="${SIG_MODE === 'p' ? 'Ej. 0.001' : 'Ej. 4.215'}" value="${presetStat !== undefined ? presetStat : ''}">
+      </div>
+      <div class="field">
+        <label>Etiqueta (opcional)</label>
+        <input type="text" class="pair-hyp-input" placeholder='Ej. "H1"'>
+      </div>
+    </div>
+    <div class="pr-hyp">
+      <input type="text" class="pair-hyp-text" placeholder='Texto de la hipótesis (opcional) — ej. "Existe relación directa y significativa entre..."'>
+    </div>
+  `;
+  list.appendChild(row);
+}
+
+function relabelPairs(){
+  [...document.querySelectorAll('.pair-row')].forEach((row,i)=>{
+    row.querySelector('.h-label').textContent = `H${i+1}`;
+  });
+}
+
+// ============================================================
+// VALIDAR Y CONSTRUIR EL MODELO
+// ============================================================
+function generarDiagrama(){
+  const errBox = document.getElementById('err-b');
+  errBox.style.display = 'none';
+
+  const rows = [...document.querySelectorAll('.pair-row')];
+  if(rows.length === 0){
+    errBox.textContent = '⚠ Agrega al menos un par / hipótesis.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const pairs = [];
+  for(let i=0;i<rows.length;i++){
+    const row = rows[i];
+    const indepName = row.querySelector('.pair-indep-select').value;
+    const betaRaw = row.querySelector('.pair-beta-input').value;
+    const statRaw = row.querySelector('.pair-stat-input').value;
+    const hypText = row.querySelector('.pair-hyp-text').value.trim();
+
+    if(betaRaw === '' || isNaN(parseFloat(betaRaw))){
+      errBox.textContent = `⚠ Ingresa un coeficiente β válido en H${i+1} (${indepName}).`;
+      errBox.style.display = 'block';
+      return;
+    }
+    if(statRaw === '' || isNaN(parseFloat(statRaw))){
+      errBox.textContent = `⚠ Ingresa un ${SIG_MODE==='p'?'p-value':'t-value'} válido en H${i+1} (${indepName}).`;
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const beta = parseFloat(betaRaw);
+    const stat = parseFloat(statRaw);
+    const significant = SIG_MODE === 'p' ? (stat < 0.05) : (Math.abs(stat) >= 1.96);
+
+    pairs.push({ label:`H${i+1}`, indepName, beta, stat, significant, hypText });
+  }
+
+  CFG = { depName: DEP_NAME, sigMode: SIG_MODE, pairs };
+
+  document.getElementById('screen-b').style.display = 'none';
+  document.getElementById('screen-diagram').classList.add('on');
+  setStep('ind-c');
+
+  document.getElementById('diag-title-text').textContent =
+    `${pairs.map(p=>p.indepName).join(' · ')} → ${DEP_NAME}`;
+
+  buildDiagramSVG();
+  resetStatus();
+}
+
+function volverAPasoBDesdeDiagrama(){
+  if(isPlaying) { playToken++; isPlaying=false; }
+  document.getElementById('screen-diagram').classList.remove('on');
+  document.getElementById('screen-b').style.display = 'block';
+  setStep('ind-b');
+}
+
+// ============================================================
+// FORMATO
+// ============================================================
+function formatBeta(b){
+  const sign = b < 0 ? '−' : '';
+  return sign + Math.abs(b).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+}
+function formatStat(s, mode){
+  const decimals = mode === 'p' ? 3 : 2;
+  return s.toFixed(decimals).replace(/0+$/,'').replace(/\.$/,'') || '0';
+}
+
+// ============================================================
+// CONSTRUCCIÓN DEL DIAGRAMA SVG
+// ============================================================
+const R_INDEP = 62;
+const R_DEP = 70;
+const X_INDEP = 190;
+const X_DEP = 880;
+
+function buildDiagramSVG(){
+  const n = CFG.pairs.length;
+  const rowHeight = 190;
+  const H = Math.max(560, n * rowHeight + 80);
+  const W = 1100;
+  const svg = document.getElementById('diagram-svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('height', H);
+  svg.innerHTML = '';
+
+  const depY = H / 2;
+
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML = `
+    <marker id="arrow-black" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="1.75" markerHeight="1.75" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000000"/>
+    </marker>
+    <marker id="arrow-black-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="2" markerHeight="2" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000000"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="1.75" markerHeight="1.75" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9aa5b5"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  CFG._geo = [];
+
+  CFG.pairs.forEach((pair, i)=>{
+    const y = 90 + i * rowHeight;
+    const cx = X_INDEP, cy = y;
+
+    const dx = X_DEP - cx, dy = depY - cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const ux = dx/dist, uy = dy/dist;
+    const startX = cx + ux * R_INDEP;
+    const startY = cy + uy * R_INDEP;
+    const endX = X_DEP - ux * R_DEP;
+    const endY = depY - uy * R_DEP;
+
+    let activePath = null, totalLen = 0, dot = null, travelLabel = null;
+
+    if(pair.significant){
+      // línea estática negra de fondo
+      const staticLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      staticLine.setAttribute('x1', startX); staticLine.setAttribute('y1', startY);
+      staticLine.setAttribute('x2', endX); staticLine.setAttribute('y2', endY);
+      staticLine.setAttribute('stroke', '#000000');
+      staticLine.setAttribute('stroke-width', '2');
+      staticLine.setAttribute('marker-end', 'url(#arrow-black)');
+      svg.appendChild(staticLine);
+
+      // línea activa (se revela durante la animación)
+      activePath = document.createElementNS('http://www.w3.org/2000/svg','path');
+      activePath.setAttribute('d', `M ${startX} ${startY} L ${endX} ${endY}`);
+      activePath.setAttribute('stroke', '#000000');
+      activePath.setAttribute('stroke-width', '4');
+      activePath.setAttribute('fill', 'none');
+      activePath.setAttribute('marker-end', 'url(#arrow-black-active)');
+      svg.appendChild(activePath);
+      totalLen = activePath.getTotalLength();
+      activePath.setAttribute('stroke-dasharray', totalLen);
+      activePath.setAttribute('stroke-dashoffset', totalLen);
+
+      // punto y etiqueta viajeros
+      dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('r', '7');
+      dot.setAttribute('fill', '#1a73e8');
+      dot.setAttribute('opacity', '0');
+      svg.appendChild(dot);
+
+      travelLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      travelLabel.setAttribute('text-anchor','middle');
+      travelLabel.setAttribute('font-size','13');
+      travelLabel.setAttribute('font-weight','800');
+      travelLabel.setAttribute('fill','#1a73e8');
+      travelLabel.setAttribute('opacity','0');
+      svg.appendChild(travelLabel);
+    } else {
+      // línea gris discontinua, sin animación
+      const dashedLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      dashedLine.setAttribute('x1', startX); dashedLine.setAttribute('y1', startY);
+      dashedLine.setAttribute('x2', endX); dashedLine.setAttribute('y2', endY);
+      dashedLine.setAttribute('stroke', '#9aa5b5');
+      dashedLine.setAttribute('stroke-width', '2');
+      dashedLine.setAttribute('stroke-dasharray', '7,6');
+      dashedLine.setAttribute('marker-end', 'url(#arrow-gray)');
+      svg.appendChild(dashedLine);
+    }
+
+    // etiqueta del coeficiente + estadístico (estática, punto medio)
+    const midX = (startX+endX)/2, midY = (startY+endY)/2;
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', midX);
+    label.setAttribute('y', midY - 10);
+    label.setAttribute('text-anchor','middle');
+    label.setAttribute('font-size','14');
+    label.setAttribute('font-weight','700');
+    label.setAttribute('fill', pair.significant ? '#3a4254' : '#9aa5b5');
+    label.textContent = `${formatBeta(pair.beta)} (${formatStat(pair.stat, CFG.sigMode)})`;
+    svg.appendChild(label);
+
+    // círculo independiente
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', R_INDEP);
+    circle.setAttribute('fill', pair.significant ? betaToColor(pair.beta) : GRAY_FILL);
+    circle.setAttribute('stroke', pair.significant ? '#c0392b' : '#b6bdc9');
+    circle.setAttribute('stroke-width', '1');
+    g.appendChild(circle);
+    svg.appendChild(g);
+
+    const nameLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    nameLabel.setAttribute('x', cx);
+    nameLabel.setAttribute('y', cy + R_INDEP + 22);
+    nameLabel.setAttribute('text-anchor','middle');
+    nameLabel.setAttribute('font-size','13');
+    nameLabel.setAttribute('font-weight','700');
+    nameLabel.setAttribute('fill','#1a2433');
+    nameLabel.textContent = pair.indepName;
+    svg.appendChild(nameLabel);
+
+    const hLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    hLabel.setAttribute('x', cx);
+    hLabel.setAttribute('y', cy + R_INDEP + 40);
+    hLabel.setAttribute('text-anchor','middle');
+    hLabel.setAttribute('font-size','11');
+    hLabel.setAttribute('font-weight','700');
+    hLabel.setAttribute('fill', pair.significant ? '#1a73e8' : '#9aa5b5');
+    hLabel.textContent = pair.label + (pair.significant ? '' : ' (no significativa)');
+    svg.appendChild(hLabel);
+
+    CFG._geo.push({ pathEl: activePath, totalLen, dotEl: dot, labelEl: travelLabel, significant: pair.significant });
+  });
+
+  const depG = document.createElementNS('http://www.w3.org/2000/svg','g');
+  const depCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  depCircle.setAttribute('cx', X_DEP); depCircle.setAttribute('cy', depY); depCircle.setAttribute('r', R_DEP);
+  depCircle.setAttribute('fill', '#1a73e8');
+  depG.appendChild(depCircle);
+  svg.appendChild(depG);
+
+  const depNameLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+  depNameLabel.setAttribute('x', X_DEP);
+  depNameLabel.setAttribute('y', depY + R_DEP + 26);
+  depNameLabel.setAttribute('text-anchor','middle');
+  depNameLabel.setAttribute('font-size','15');
+  depNameLabel.setAttribute('font-weight','800');
+  depNameLabel.setAttribute('fill','#1a2433');
+  depNameLabel.textContent = CFG.depName;
+  svg.appendChild(depNameLabel);
+
+  CFG._depG = depG;
+  CFG._depCx = X_DEP;
+  CFG._depCy = depY;
+}
+
+// ============================================================
+// ANIMACIÓN
+// ============================================================
+function resetStatus(){
+  document.getElementById('status-bar').textContent = 'Pulsa "Reproducir secuencia" para iniciar la animación de las hipótesis significativas.';
+}
+
+function reiniciarDiagrama(){
+  playToken++;
+  isPlaying = false;
+  loopActive = false;
+  document.getElementById('loop-btn').textContent = '🔁 Loop: Desactivado';
+  document.getElementById('loop-btn').classList.remove('btn-primary');
+  document.getElementById('loop-btn').classList.add('btn-secondary');
+  document.getElementById('play-seq-btn').disabled = false;
+  buildDiagramSVG();
+  resetStatus();
+}
+
+function toggleLoop(){
+  loopActive = !loopActive;
+  const btn = document.getElementById('loop-btn');
+  btn.textContent = loopActive ? '🔁 Loop: Activado' : '🔁 Loop: Desactivado';
+  btn.classList.toggle('btn-primary', loopActive);
+  btn.classList.toggle('btn-secondary', !loopActive);
+}
+
+function getNormBounds(){
+  const abss = CFG.pairs.filter(p=>p.significant).map(p => Math.abs(p.beta));
+  if(abss.length === 0) return { min:0, max:1 };
+  return { min: Math.min(...abss), max: Math.max(...abss) };
+}
+function normalize(beta, bounds){
+  if(bounds.max === bounds.min) return 0.5;
+  return (Math.abs(beta) - bounds.min) / (bounds.max - bounds.min);
+}
+
+const MIN_DURATION = 650;
+const MAX_DURATION = 3600;
+
+function easeInOutCubic(t){
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+}
+function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+async function reproducirSecuencia(){
+  if(isPlaying) return;
+  isPlaying = true;
+  const myToken = ++playToken;
+  document.getElementById('play-seq-btn').disabled = true;
+
+  do{
+    const bounds = getNormBounds();
+
+    for(let i=0; i<CFG.pairs.length; i++){
+      if(myToken !== playToken) break;
+      const pair = CFG.pairs[i];
+
+      if(!pair.significant){
+        document.getElementById('status-bar').innerHTML =
+          `⏭ ${pair.label}: <b>${pair.indepName} → ${CFG.depName}</b> no es significativa (${CFG.sigMode==='p' ? 'p ≥ 0.05' : '|t| < 1.96'}) — se omite.`;
+        await sleep(700);
+        continue;
+      }
+
+      await reproducirHipotesis(i, bounds, myToken);
+      if(myToken !== playToken) break;
+      await sleep(450);
+    }
+    if(myToken !== playToken) break;
+
+    document.getElementById('status-bar').textContent =
+      `✅ Secuencia completa sobre "${CFG.depName}".`;
+
+    if(loopActive){
+      await sleep(900);
+      if(myToken !== playToken) break;
+    }
+  } while(loopActive && myToken === playToken);
+
+  if(myToken === playToken){
+    isPlaying = false;
+    document.getElementById('play-seq-btn').disabled = false;
+  }
+}
+
+function reproducirHipotesis(i, bounds, myToken){
+  return new Promise(resolve=>{
+    const pair = CFG.pairs[i];
+    const geo = CFG._geo[i];
+    const norm = normalize(pair.beta, bounds);
+
+    const duration = MAX_DURATION - norm * (MAX_DURATION - MIN_DURATION);
+
+    document.getElementById('status-bar').innerHTML =
+      `▶ ${pair.label}: <b>${pair.indepName} → ${CFG.depName}</b> &nbsp; (β = ${formatBeta(pair.beta)}, ${CFG.sigMode}=${formatStat(pair.stat, CFG.sigMode)})`;
+
+    geo.dotEl.setAttribute('opacity','1');
+    geo.labelEl.setAttribute('opacity','1');
+    geo.labelEl.textContent = formatBeta(pair.beta);
+
+    const start = performance.now();
+
+    function step(now){
+      if(myToken !== playToken){ resolve(); return; }
+      const elapsed = now - start;
+      const t = Math.min(1, elapsed / duration);
+      const eased = easeInOutCubic(t);
+
+      const len = geo.totalLen;
+      geo.pathEl.setAttribute('stroke-dashoffset', len * (1 - eased));
+
+      const pt = geo.pathEl.getPointAtLength(len * eased);
+      geo.dotEl.setAttribute('cx', pt.x);
+      geo.dotEl.setAttribute('cy', pt.y);
+      geo.labelEl.setAttribute('x', pt.x);
+      geo.labelEl.setAttribute('y', pt.y - 14);
+
+      if(t < 1){
+        requestAnimationFrame(step);
+      } else {
+        geo.dotEl.setAttribute('opacity','0');
+        geo.labelEl.setAttribute('opacity','0');
+        triggerImpactEffect(norm);
+        resolve();
+      }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function triggerImpactEffect(norm){
+  const mode = document.getElementById('effect-select').value;
+  if(mode === 'shake-h') shakeHorizontalDependent(norm);
+  else if(mode === 'shake-circular') shakeCircularDependent(norm);
+  else pulseScaleDependent(norm);
+}
+
+function pulseScaleDependent(norm){
+  const depG = CFG._depG;
+  const cx = CFG._depCx, cy = CFG._depCy;
+  const amplitude = 0.05 + norm * 0.22;
+  const cycles = 3 + norm * 6;
+  const pulseDuration = 750 + norm * 350;
+  const start = performance.now();
+  function step(now){
+    const elapsed = now - start;
+    const t = Math.min(1, elapsed / pulseDuration);
+    const damp = 1 - t;
+    const scale = 1 + amplitude * damp * Math.sin(t * Math.PI * 2 * cycles);
+    depG.setAttribute('transform', `translate(${cx},${cy}) scale(${scale}) translate(${-cx},${-cy})`);
+    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+  }
+  requestAnimationFrame(step);
+}
+
+function shakeHorizontalDependent(norm){
+  const depG = CFG._depG;
+  const amplitude = 5 + norm * 32;
+  const cycles = 3 + norm * 6;
+  const pulseDuration = 750 + norm * 350;
+  const start = performance.now();
+  function step(now){
+    const elapsed = now - start;
+    const t = Math.min(1, elapsed / pulseDuration);
+    const damp = 1 - t;
+    const dx = amplitude * damp * Math.sin(t * Math.PI * 2 * cycles);
+    depG.setAttribute('transform', `translate(${dx},0)`);
+    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+  }
+  requestAnimationFrame(step);
+}
+
+function shakeCircularDependent(norm){
+  const depG = CFG._depG;
+  const amplitude = 4 + norm * 20;
+  const cycles = 3 + norm * 6;
+  const pulseDuration = 750 + norm * 350;
+  const start = performance.now();
+  function step(now){
+    const elapsed = now - start;
+    const t = Math.min(1, elapsed / pulseDuration);
+    const damp = 1 - t;
+    const angle = t * Math.PI * 2 * cycles;
+    const dx = amplitude * damp * Math.cos(angle);
+    const dy = amplitude * damp * Math.sin(angle);
+    depG.setAttribute('transform', `translate(${dx},${dy})`);
+    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+  }
+  requestAnimationFrame(step);
+}
+</script>
+</body>
+</html>
