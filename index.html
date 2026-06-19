@@ -67,6 +67,11 @@ body{
 .rm-btn:hover{background:#fadcd9}
 
 /* ===== PASO B: filas de pares/hipótesis ===== */
+.pairs-inline{
+  margin-top:28px;
+  padding-top:24px;
+  border-top:1px solid #eef1f6;
+}
 .sig-selector{
   display:flex;gap:14px;align-items:center;background:#eef4ff;border:1.5px solid #c7dbfb;
   border-radius:10px;padding:14px 16px;margin-bottom:20px;flex-wrap:wrap;
@@ -78,10 +83,10 @@ body{
 .pair-row{
   background:#f7f9fc;border:1px solid #e2e8f1;border-radius:10px;padding:14px;margin-bottom:12px;
 }
-.pair-row .pr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pair-row .pr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .pair-row .h-label{font-weight:800;color:#1a73e8;font-size:.85rem;min-width:34px}
 .pair-row .arrow-to{font-size:.85rem;color:#6b7686;white-space:nowrap}
-.pair-row select{flex:1}
+.pair-row select{flex:1;min-width:220px}
 .pair-row .pr-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .pair-row .pr-grid .field{margin-bottom:0}
 .pair-row .pr-hyp{margin-top:10px}
@@ -165,63 +170,55 @@ body{
 .sig-legend .swatch-line.dashed{border-top:3px dashed #9aa5b5}
 
 .foot{font-size:.72rem;color:#9aa5b5;text-align:center;margin-top:18px}
+
+@media (max-width: 860px){
+  .pair-row .pr-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <div class="step-indicator" id="step-indicator">
-  <span class="step" id="ind-a">Paso A · Variables</span>
-  <span class="step" id="ind-b">Paso B · Pares e hipótesis</span>
+  <span class="step" id="ind-a">Paso A · Variables y pares</span>
   <span class="step" id="ind-c">Diagrama</span>
 </div>
 
-<!-- ===== PASO A: VARIABLES ===== -->
+<!-- ===== PASO A + PASO B INTEGRADOS ===== -->
 <div class="card" id="screen-a">
   <h1>🧩 Animador de hipótesis — Modelo estructural (PLS-SEM)</h1>
-  <div class="sub">Paso A: registra los nombres de tus variables (sin números todavía).</div>
+  <div class="sub">Registra tus variables y, justo debajo, arma los pares de hipótesis seleccionando variable de origen y variable de destino.</div>
 
   <div class="field">
-    <label for="inp-dep-name">Variable dependiente</label>
-    <input type="text" id="inp-dep-name" value="Educational Quality">
-  </div>
-
-  <div class="field">
-    <label>Variables independientes</label>
+    <label>Variables</label>
     <div class="name-list" id="indep-name-list"></div>
     <div class="btn-row" style="margin-top:0">
-      <button class="btn btn-secondary btn-sm" onclick="addIndepNameRow()">+Agregar Variable</button>
-      <button class="btn btn-ghost btn-sm" onclick="removeLastIndepNameRow()">-Quitar última variable</button>
+      <button class="btn btn-secondary btn-sm" onclick="addVariableRow()">+Agregar Variable</button>
+      <button class="btn btn-ghost btn-sm" onclick="removeLastVariableRow()">-Quitar última variable</button>
     </div>
   </div>
 
   <div class="err" id="err-a"></div>
 
-  <div class="btn-row">
-    <button class="btn btn-primary" onclick="irAPasoB()">Continuar a Paso B →</button>
-    <button class="btn btn-ghost" onclick="cargarEjemplo()">📌 Cargar ejemplo (captura compartida)</button>
-  </div>
-</div>
+  <div class="pairs-inline">
+    <h1 style="font-size:1.15rem">Paso B — Pares de hipótesis</h1>
+    <div class="sub">Los pares aparecen en la parte inferior. Puedes relacionar cualquier variable con cualquier otra; no es obligatorio tener una sola variable dependiente.</div>
 
-<!-- ===== PASO B: PARES E HIPÓTESIS ===== -->
-<div class="card" id="screen-b" style="display:none">
-  <h1>Paso B — Pares de hipótesis</h1>
-  <div class="sub">Selecciona de la lista la variable independiente de cada par. Cada fila representa una hipótesis (independiente → <span id="dep-name-echo">—</span>).</div>
+    <div class="sig-selector">
+      <span class="tag">Mostrar significancia con:</span>
+      <label class="radio-opt"><input type="radio" name="sig-mode" value="p" checked onchange="onSigModeChange()"> p-value (significativo si p &lt; 0.05)</label>
+      <label class="radio-opt"><input type="radio" name="sig-mode" value="t" onchange="onSigModeChange()"> t-value (significativo si |t| ≥ 1.96)</label>
+    </div>
 
-  <div class="sig-selector">
-    <span class="tag">Mostrar significancia con:</span>
-    <label class="radio-opt"><input type="radio" name="sig-mode" value="p" checked onchange="onSigModeChange()"> p-value (significativo si p &lt; 0.05)</label>
-    <label class="radio-opt"><input type="radio" name="sig-mode" value="t" onchange="onSigModeChange()"> t-value (significativo si |t| ≥ 1.96)</label>
-  </div>
+    <div id="pair-list"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addPairRow()">+ Agregar par / hipótesis</button>
 
-  <div id="pair-list"></div>
-  <button class="btn btn-secondary btn-sm" onclick="addPairRow()">+ Agregar par / hipótesis</button>
+    <div class="err" id="err-b"></div>
 
-  <div class="err" id="err-b"></div>
-
-  <div class="btn-row">
-    <button class="btn btn-primary" onclick="generarDiagrama()">🧩 Generar diagrama →</button>
-    <button class="btn btn-ghost" onclick="volverAPasoA()">← Volver a Paso A</button>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generarDiagrama()">🧩 Generar diagrama o modelo</button>
+      <button class="btn btn-ghost" onclick="cargarEjemplo()">📌 Cargar ejemplo</button>
+    </div>
   </div>
 </div>
 
@@ -234,7 +231,7 @@ body{
         <div class="diag-sub">Modelo estructural — coeficientes de ruta (β) y significancia</div>
       </div>
       <div class="btn-row" style="margin-top:0">
-        <button class="btn btn-ghost" onclick="volverAPasoBDesdeDiagrama()">← Editar pares</button>
+        <button class="btn btn-ghost" onclick="volverAEdicionDesdeDiagrama()">← Editar variables y pares</button>
       </div>
     </div>
 
@@ -265,7 +262,7 @@ body{
     </div>
 
     <div class="color-legend">
-      <div class="cl-title">Color de las variables independientes según su coeficiente β (solo si es significativo)</div>
+      <div class="cl-title">Color de las variables de origen según su coeficiente β (solo si es significativo)</div>
       <div class="cl-row">
         <span class="cl-label">Efecto bajo</span>
         <div class="cl-bar"></div>
@@ -282,16 +279,16 @@ body{
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
-let DEP_NAME = '';
-let INDEP_NAMES = [];
-let SIG_MODE = 'p'; // 'p' | 't'
-let CFG = null;      // { depName, sigMode, pairs: [{label, indepName, beta, stat, significant}] }
+let VARIABLE_NAMES = [];
+let SIG_MODE = 'p';
+let CFG = null;
 let isPlaying = false;
 let loopActive = false;
 let playToken = 0;
+let EXAMPLE_LOADED = false;
 
 function setStep(active){
-  ['ind-a','ind-b','ind-c'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['ind-a','ind-c'].forEach(id=>document.getElementById(id).classList.remove('active'));
   document.getElementById(active).classList.add('active');
 }
 setStep('ind-a');
@@ -311,79 +308,65 @@ function betaToColor(beta){
 const GRAY_FILL = '#d8dce2';
 
 // ============================================================
-// PASO A — LISTA DE NOMBRES
+// VARIABLES
 // ============================================================
-function addIndepNameRow(value){
+function addVariableRow(value=''){
   const list = document.getElementById('indep-name-list');
-  if(list.children.length >= 8) return;
+  if(list.children.length >= 12) return;
   const row = document.createElement('div');
   row.className = 'name-row';
   row.innerHTML = `
-    <input type="text" class="indep-name-input" placeholder="Nombre de la variable independiente" value="${value !== undefined ? value : ''}">
-    <button class="rm-btn" onclick="this.closest('.name-row').remove()" title="Quitar">✕</button>
+    <input type="text" class="var-name-input" placeholder="Nombre de la variable" value="${value}">
+    <button class="rm-btn" onclick="this.closest('.name-row').remove(); syncPairsAfterVariableChange();" title="Quitar">✕</button>
   `;
   list.appendChild(row);
+  syncPairsAfterVariableChange();
 }
 
-function removeLastIndepNameRow(){
+function removeLastVariableRow(){
   const list = document.getElementById('indep-name-list');
   if(list.lastElementChild) list.removeChild(list.lastElementChild);
+  syncPairsAfterVariableChange();
 }
 
-function cargarEjemplo(){
-  document.getElementById('inp-dep-name').value = 'Educational Quality';
-  document.getElementById('indep-name-list').innerHTML = '';
-  addIndepNameRow('Spiritual Education');
-  addIndepNameRow('Teacher Professionalism');
-  addIndepNameRow('School Climate');
-  EXAMPLE_LOADED = true;
+function getVariableNames(){
+  return [...document.querySelectorAll('.var-name-input')].map(i=>i.value.trim()).filter(Boolean);
 }
-let EXAMPLE_LOADED = false;
 
-cargarEjemplo(); // el modelo compartido aparece precargado por defecto, incluyendo los pares del Paso B
-
-function irAPasoB(){
+function validateVariables(showError=true){
   const errBox = document.getElementById('err-a');
   errBox.style.display = 'none';
 
-  const depName = document.getElementById('inp-dep-name').value.trim();
-  if(!depName){
-    errBox.textContent = '⚠ Ingresa el nombre de la variable dependiente.';
-    errBox.style.display = 'block';
-    return;
+  const names = getVariableNames();
+  if(names.length < 2){
+    if(showError){
+      errBox.textContent = '⚠ Agrega al menos dos variables para poder formar hipótesis.';
+      errBox.style.display = 'block';
+    }
+    return null;
   }
-  const names = [...document.querySelectorAll('.indep-name-input')].map(i=>i.value.trim()).filter(Boolean);
-  if(names.length === 0){
-    errBox.textContent = '⚠ Agrega al menos una variable independiente.';
-    errBox.style.display = 'block';
-    return;
-  }
+
   const dupSet = new Set(names);
   if(dupSet.size !== names.length){
-    errBox.textContent = '⚠ Hay nombres de variables independientes repetidos.';
-    errBox.style.display = 'block';
-    return;
+    if(showError){
+      errBox.textContent = '⚠ Hay nombres de variables repetidos.';
+      errBox.style.display = 'block';
+    }
+    return null;
   }
 
-  DEP_NAME = depName;
-  INDEP_NAMES = names;
-
-  document.getElementById('screen-a').style.display = 'none';
-  document.getElementById('screen-b').style.display = 'block';
-  document.getElementById('dep-name-echo').textContent = DEP_NAME;
-  setStep('ind-b');
-
-  buildPairListUI();
+  VARIABLE_NAMES = names;
+  return names;
 }
 
-function volverAPasoA(){
-  document.getElementById('screen-b').style.display = 'none';
-  document.getElementById('screen-a').style.display = 'block';
-  setStep('ind-a');
+function syncPairsAfterVariableChange(){
+  const names = validateVariables(false) || [];
+  const rows = [...document.querySelectorAll('.pair-row')];
+  rows.forEach(row => refreshPairRowOptions(row, names));
 }
 
 // ============================================================
-// PASO B — PARES / HIPÓTESIS
+// PARES / HIPÓTESIS
 // ============================================================
 function onSigModeChange(){
   SIG_MODE = document.querySelector('input[name="sig-mode"]:checked').value;
@@ -395,33 +378,45 @@ function onSigModeChange(){
   });
 }
 
-function buildPairListUI(){
+function buildPairListUI(presets=[]){
   const list = document.getElementById('pair-list');
   list.innerHTML = '';
-
-  if(EXAMPLE_LOADED && INDEP_NAMES.length === 3){
-    // Precarga de ejemplo coherente con la captura: SE no significativo, TP y SC significativos
-    addPairRow('Spiritual Education', 0.008, '0.870');
-    addPairRow('Teacher Professionalism', 0.318, '0.002');
-    addPairRow('School Climate', 0.568, '0.000');
+  if(presets.length){
+    presets.forEach(p => addPairRow(p.from, p.to, p.beta, p.stat, p.hypText || ''));
   } else {
     addPairRow();
   }
 }
 
-function addPairRow(presetName, presetBeta, presetStat){
+function buildSelectOptions(selectedValue){
+  return VARIABLE_NAMES.map(n=>`<option value="${n}" ${n===selectedValue?'selected':''}>${n}</option>`).join('');
+}
+
+function refreshPairRowOptions(row, names){
+  const fromSelect = row.querySelector('.pair-from-select');
+  const toSelect = row.querySelector('.pair-to-select');
+  const currentFrom = fromSelect.value;
+  const currentTo = toSelect.value;
+  fromSelect.innerHTML = names.map(n=>`<option value="${n}" ${n===currentFrom?'selected':''}>${n}</option>`).join('');
+  toSelect.innerHTML = names.map(n=>`<option value="${n}" ${n===currentTo?'selected':''}>${n}</option>`).join('');
+}
+
+function addPairRow(presetFrom, presetTo, presetBeta, presetStat, presetHypText=''){
+  validateVariables(false);
   const list = document.getElementById('pair-list');
   const idx = list.children.length;
   const row = document.createElement('div');
   row.className = 'pair-row';
 
-  const options = INDEP_NAMES.map(n=>`<option value="${n}" ${n===presetName?'selected':''}>${n}</option>`).join('');
+  const fallbackFrom = presetFrom || VARIABLE_NAMES[0] || '';
+  const fallbackTo = presetTo || VARIABLE_NAMES[1] || VARIABLE_NAMES[0] || '';
 
   row.innerHTML = `
     <div class="pr-top">
       <span class="h-label">H${idx+1}</span>
-      <select class="pair-indep-select">${options}</select>
-      <span class="arrow-to">→ ${DEP_NAME}</span>
+      <select class="pair-from-select">${buildSelectOptions(fallbackFrom)}</select>
+      <span class="arrow-to">→</span>
+      <select class="pair-to-select">${buildSelectOptions(fallbackTo)}</select>
       <button class="rm-btn" onclick="this.closest('.pair-row').remove(); relabelPairs();" title="Quitar">✕</button>
     </div>
     <div class="pr-grid">
@@ -439,7 +434,7 @@ function addPairRow(presetName, presetBeta, presetStat){
       </div>
     </div>
     <div class="pr-hyp">
-      <input type="text" class="pair-hyp-text" placeholder='Texto de la hipótesis (opcional) — ej. "Existe relación directa y significativa entre..."'>
+      <input type="text" class="pair-hyp-text" placeholder='Texto de la hipótesis (opcional) — ej. "Existe relación directa y significativa entre..."' value="${presetHypText}">
     </div>
   `;
   list.appendChild(row);
@@ -451,10 +446,27 @@ function relabelPairs(){
   });
 }
 
+function cargarEjemplo(){
+  document.getElementById('indep-name-list').innerHTML = '';
+  addVariableRow('Spiritual Education');
+  addVariableRow('Educational Quality');
+  addVariableRow('Teacher Professionalism');
+  EXAMPLE_LOADED = true;
+  validateVariables(false);
+  buildPairListUI([
+    { from:'Spiritual Education', to:'Educational Quality', beta:0.008, stat:'0.870' },
+    { from:'Teacher Professionalism', to:'Educational Quality', beta:0.318, stat:'0.002' },
+    { from:'Spiritual Education', to:'Teacher Professionalism', beta:0.568, stat:'0.000' }
+  ]);
+}
+
 // ============================================================
 // VALIDAR Y CONSTRUIR EL MODELO
 // ============================================================
 function generarDiagrama(){
+  const names = validateVariables(true);
+  if(!names) return;
+
   const errBox = document.getElementById('err-b');
   errBox.style.display = 'none';
 
@@ -468,18 +480,29 @@ function generarDiagrama(){
   const pairs = [];
   for(let i=0;i<rows.length;i++){
     const row = rows[i];
-    const indepName = row.querySelector('.pair-indep-select').value;
+    const fromName = row.querySelector('.pair-from-select').value;
+    const toName = row.querySelector('.pair-to-select').value;
     const betaRaw = row.querySelector('.pair-beta-input').value;
     const statRaw = row.querySelector('.pair-stat-input').value;
     const hypText = row.querySelector('.pair-hyp-text').value.trim();
 
+    if(!fromName || !toName){
+      errBox.textContent = `⚠ Selecciona variables válidas en H${i+1}.`;
+      errBox.style.display = 'block';
+      return;
+    }
+    if(fromName === toName){
+      errBox.textContent = `⚠ En H${i+1}, la variable de origen y destino no pueden ser la misma.`;
+      errBox.style.display = 'block';
+      return;
+    }
     if(betaRaw === '' || isNaN(parseFloat(betaRaw))){
-      errBox.textContent = `⚠ Ingresa un coeficiente β válido en H${i+1} (${indepName}).`;
+      errBox.textContent = `⚠ Ingresa un coeficiente β válido en H${i+1} (${fromName} → ${toName}).`;
       errBox.style.display = 'block';
       return;
     }
     if(statRaw === '' || isNaN(parseFloat(statRaw))){
-      errBox.textContent = `⚠ Ingresa un ${SIG_MODE==='p'?'p-value':'t-value'} válido en H${i+1} (${indepName}).`;
+      errBox.textContent = `⚠ Ingresa un ${SIG_MODE==='p'?'p-value':'t-value'} válido en H${i+1} (${fromName} → ${toName}).`;
       errBox.style.display = 'block';
       return;
     }
@@ -488,27 +511,27 @@ function generarDiagrama(){
     const stat = parseFloat(statRaw);
     const significant = SIG_MODE === 'p' ? (stat < 0.05) : (Math.abs(stat) >= 1.96);
 
-    pairs.push({ label:`H${i+1}`, indepName, beta, stat, significant, hypText });
+    pairs.push({ label:`H${i+1}`, fromName, toName, beta, stat, significant, hypText });
   }
 
-  CFG = { depName: DEP_NAME, sigMode: SIG_MODE, pairs };
+  CFG = { variableNames:[...names], sigMode: SIG_MODE, pairs };
 
-  document.getElementById('screen-b').style.display = 'none';
+  document.getElementById('screen-a').style.display = 'none';
   document.getElementById('screen-diagram').classList.add('on');
   setStep('ind-c');
 
   document.getElementById('diag-title-text').textContent =
-    `${pairs.map(p=>p.indepName).join(' · ')} → ${DEP_NAME}`;
+    pairs.map(p=>`${p.label} ${p.fromName} → ${p.toName}`).join(' · ');
 
   buildDiagramSVG();
   resetStatus();
 }
 
-function volverAPasoBDesdeDiagrama(){
+function volverAEdicionDesdeDiagrama(){
   if(isPlaying) { playToken++; isPlaying=false; }
   document.getElementById('screen-diagram').classList.remove('on');
-  document.getElementById('screen-b').style.display = 'block';
-  setStep('ind-b');
+  document.getElementById('screen-a').style.display = 'block';
+  setStep('ind-a');
 }
 
 // ============================================================
@@ -526,22 +549,19 @@ function formatStat(s, mode){
 // ============================================================
 // CONSTRUCCIÓN DEL DIAGRAMA SVG
 // ============================================================
-const R_INDEP = 62;
-const R_DEP = 70;
-const X_INDEP = 190;
-const X_DEP = 880;
+const NODE_RADIUS = 62;
+const CENTER_X = 550;
+const CENTER_Y = 300;
+const BASE_ORBIT = 210;
 
 function buildDiagramSVG(){
-  const n = CFG.pairs.length;
-  const rowHeight = 190;
-  const H = Math.max(560, n * rowHeight + 80);
+  const nodes = CFG.variableNames;
   const W = 1100;
+  const H = Math.max(620, 320 + Math.max(0, nodes.length - 3) * 60);
   const svg = document.getElementById('diagram-svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('height', H);
   svg.innerHTML = '';
-
-  const depY = H / 2;
 
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
   defs.innerHTML = `
@@ -557,24 +577,45 @@ function buildDiagramSVG(){
   `;
   svg.appendChild(defs);
 
+  const nodePos = {};
+  const orbitRadius = BASE_ORBIT + Math.max(0, nodes.length - 4) * 18;
+  nodes.forEach((name, i) => {
+    const angle = (-Math.PI / 2) + (i * (2 * Math.PI / nodes.length));
+    nodePos[name] = {
+      x: CENTER_X + orbitRadius * Math.cos(angle),
+      y: CENTER_Y + orbitRadius * Math.sin(angle)
+    };
+  });
+
+  const incomingByTarget = {};
+  CFG.pairs.forEach(pair => {
+    if(!incomingByTarget[pair.toName]) incomingByTarget[pair.toName] = [];
+    incomingByTarget[pair.toName].push(pair);
+  });
+
+  const significantBetasBySource = {};
+  CFG.pairs.forEach(pair => {
+    if(pair.significant) significantBetasBySource[pair.fromName] = pair.beta;
+  });
+
   CFG._geo = [];
+  CFG.pairs.forEach((pair, i) => {
+    const from = nodePos[pair.fromName];
+    const to = nodePos[pair.toName];
 
-  CFG.pairs.forEach((pair, i)=>{
-    const y = 90 + i * rowHeight;
-    const cx = X_INDEP, cy = y;
-
-    const dx = X_DEP - cx, dy = depY - cy;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    const ux = dx/dist, uy = dy/dist;
-    const startX = cx + ux * R_INDEP;
-    const startY = cy + uy * R_INDEP;
-    const endX = X_DEP - ux * R_DEP;
-    const endY = depY - uy * R_DEP;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const startX = from.x + ux * NODE_RADIUS;
+    const startY = from.y + uy * NODE_RADIUS;
+    const endX = to.x - ux * NODE_RADIUS;
+    const endY = to.y - uy * NODE_RADIUS;
 
     let activePath = null, totalLen = 0, dot = null, travelLabel = null;
 
     if(pair.significant){
-      // línea estática negra de fondo
       const staticLine = document.createElementNS('http://www.w3.org/2000/svg','line');
       staticLine.setAttribute('x1', startX); staticLine.setAttribute('y1', startY);
       staticLine.setAttribute('x2', endX); staticLine.setAttribute('y2', endY);
@@ -583,7 +624,6 @@ function buildDiagramSVG(){
       staticLine.setAttribute('marker-end', 'url(#arrow-black)');
       svg.appendChild(staticLine);
 
-      // línea activa (se revela durante la animación)
       activePath = document.createElementNS('http://www.w3.org/2000/svg','path');
       activePath.setAttribute('d', `M ${startX} ${startY} L ${endX} ${endY}`);
       activePath.setAttribute('stroke', '#000000');
@@ -595,7 +635,6 @@ function buildDiagramSVG(){
       activePath.setAttribute('stroke-dasharray', totalLen);
       activePath.setAttribute('stroke-dashoffset', totalLen);
 
-      // punto y etiqueta viajeros
       dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
       dot.setAttribute('r', '7');
       dot.setAttribute('fill', '#1a73e8');
@@ -610,7 +649,6 @@ function buildDiagramSVG(){
       travelLabel.setAttribute('opacity','0');
       svg.appendChild(travelLabel);
     } else {
-      // línea gris discontinua, sin animación
       const dashedLine = document.createElementNS('http://www.w3.org/2000/svg','line');
       dashedLine.setAttribute('x1', startX); dashedLine.setAttribute('y1', startY);
       dashedLine.setAttribute('x2', endX); dashedLine.setAttribute('y2', endY);
@@ -621,8 +659,8 @@ function buildDiagramSVG(){
       svg.appendChild(dashedLine);
     }
 
-    // etiqueta del coeficiente + estadístico (estática, punto medio)
-    const midX = (startX+endX)/2, midY = (startY+endY)/2;
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
     const label = document.createElementNS('http://www.w3.org/2000/svg','text');
     label.setAttribute('x', midX);
     label.setAttribute('y', midY - 10);
@@ -630,62 +668,37 @@ function buildDiagramSVG(){
     label.setAttribute('font-size','14');
     label.setAttribute('font-weight','700');
     label.setAttribute('fill', pair.significant ? '#3a4254' : '#9aa5b5');
-    label.textContent = `${formatBeta(pair.beta)} (${formatStat(pair.stat, CFG.sigMode)})`;
+    label.textContent = `${pair.label}: ${formatBeta(pair.beta)} (${formatStat(pair.stat, CFG.sigMode)})`;
     svg.appendChild(label);
 
-    // círculo independiente
+    CFG._geo.push({ pathEl: activePath, totalLen, dotEl: dot, labelEl: travelLabel, significant: pair.significant, targetName: pair.toName });
+  });
+
+  CFG._nodeGroups = {};
+  nodes.forEach(name => {
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
     const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', R_INDEP);
-    circle.setAttribute('fill', pair.significant ? betaToColor(pair.beta) : GRAY_FILL);
-    circle.setAttribute('stroke', pair.significant ? '#c0392b' : '#b6bdc9');
+    circle.setAttribute('cx', nodePos[name].x);
+    circle.setAttribute('cy', nodePos[name].y);
+    circle.setAttribute('r', NODE_RADIUS);
+    circle.setAttribute('fill', significantBetasBySource[name] !== undefined ? betaToColor(significantBetasBySource[name]) : GRAY_FILL);
+    circle.setAttribute('stroke', significantBetasBySource[name] !== undefined ? '#c0392b' : '#b6bdc9');
     circle.setAttribute('stroke-width', '1');
     g.appendChild(circle);
     svg.appendChild(g);
 
     const nameLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
-    nameLabel.setAttribute('x', cx);
-    nameLabel.setAttribute('y', cy + R_INDEP + 22);
+    nameLabel.setAttribute('x', nodePos[name].x);
+    nameLabel.setAttribute('y', nodePos[name].y + NODE_RADIUS + 22);
     nameLabel.setAttribute('text-anchor','middle');
     nameLabel.setAttribute('font-size','13');
     nameLabel.setAttribute('font-weight','700');
     nameLabel.setAttribute('fill','#1a2433');
-    nameLabel.textContent = pair.indepName;
+    nameLabel.textContent = name;
     svg.appendChild(nameLabel);
 
-    const hLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
-    hLabel.setAttribute('x', cx);
-    hLabel.setAttribute('y', cy + R_INDEP + 40);
-    hLabel.setAttribute('text-anchor','middle');
-    hLabel.setAttribute('font-size','11');
-    hLabel.setAttribute('font-weight','700');
-    hLabel.setAttribute('fill', pair.significant ? '#1a73e8' : '#9aa5b5');
-    hLabel.textContent = pair.label + (pair.significant ? '' : ' (no significativa)');
-    svg.appendChild(hLabel);
-
-    CFG._geo.push({ pathEl: activePath, totalLen, dotEl: dot, labelEl: travelLabel, significant: pair.significant });
+    CFG._nodeGroups[name] = g;
   });
-
-  const depG = document.createElementNS('http://www.w3.org/2000/svg','g');
-  const depCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-  depCircle.setAttribute('cx', X_DEP); depCircle.setAttribute('cy', depY); depCircle.setAttribute('r', R_DEP);
-  depCircle.setAttribute('fill', '#1a73e8');
-  depG.appendChild(depCircle);
-  svg.appendChild(depG);
-
-  const depNameLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
-  depNameLabel.setAttribute('x', X_DEP);
-  depNameLabel.setAttribute('y', depY + R_DEP + 26);
-  depNameLabel.setAttribute('text-anchor','middle');
-  depNameLabel.setAttribute('font-size','15');
-  depNameLabel.setAttribute('font-weight','800');
-  depNameLabel.setAttribute('fill','#1a2433');
-  depNameLabel.textContent = CFG.depName;
-  svg.appendChild(depNameLabel);
-
-  CFG._depG = depG;
-  CFG._depCx = X_DEP;
-  CFG._depCy = depY;
 }
 
 // ============================================================
@@ -748,7 +761,7 @@ async function reproducirSecuencia(){
 
       if(!pair.significant){
         document.getElementById('status-bar').innerHTML =
-          `⏭ ${pair.label}: <b>${pair.indepName} → ${CFG.depName}</b> no es significativa (${CFG.sigMode==='p' ? 'p ≥ 0.05' : '|t| < 1.96'}) — se omite.`;
+          `⏭ ${pair.label}: <b>${pair.fromName} → ${pair.toName}</b> no es significativa (${CFG.sigMode==='p' ? 'p ≥ 0.05' : '|t| < 1.96'}) — se omite.`;
         await sleep(700);
         continue;
       }
@@ -759,8 +772,7 @@ async function reproducirSecuencia(){
     }
     if(myToken !== playToken) break;
 
-    document.getElementById('status-bar').textContent =
-      `✅ Secuencia completa sobre "${CFG.depName}".`;
+    document.getElementById('status-bar').textContent = '✅ Secuencia completa del modelo.';
 
     if(loopActive){
       await sleep(900);
@@ -783,7 +795,7 @@ function reproducirHipotesis(i, bounds, myToken){
     const duration = MAX_DURATION - norm * (MAX_DURATION - MIN_DURATION);
 
     document.getElementById('status-bar').innerHTML =
-      `▶ ${pair.label}: <b>${pair.indepName} → ${CFG.depName}</b> &nbsp; (β = ${formatBeta(pair.beta)}, ${CFG.sigMode}=${formatStat(pair.stat, CFG.sigMode)})`;
+      `▶ ${pair.label}: <b>${pair.fromName} → ${pair.toName}</b> &nbsp; (β = ${formatBeta(pair.beta)}, ${CFG.sigMode}=${formatStat(pair.stat, CFG.sigMode)})`;
 
     geo.dotEl.setAttribute('opacity','1');
     geo.labelEl.setAttribute('opacity','1');
@@ -811,7 +823,7 @@ function reproducirHipotesis(i, bounds, myToken){
       } else {
         geo.dotEl.setAttribute('opacity','0');
         geo.labelEl.setAttribute('opacity','0');
-        triggerImpactEffect(norm);
+        triggerImpactEffect(geo.targetName, norm);
         resolve();
       }
     }
@@ -819,16 +831,16 @@ function reproducirHipotesis(i, bounds, myToken){
   });
 }
 
-function triggerImpactEffect(norm){
+function triggerImpactEffect(targetName, norm){
   const mode = document.getElementById('effect-select').value;
-  if(mode === 'shake-h') shakeHorizontalDependent(norm);
-  else if(mode === 'shake-circular') shakeCircularDependent(norm);
-  else pulseScaleDependent(norm);
+  if(mode === 'shake-h') shakeHorizontalNode(targetName, norm);
+  else if(mode === 'shake-circular') shakeCircularNode(targetName, norm);
+  else pulseScaleNode(targetName, norm);
 }
 
-function pulseScaleDependent(norm){
-  const depG = CFG._depG;
-  const cx = CFG._depCx, cy = CFG._depCy;
+function pulseScaleNode(targetName, norm){
+  const nodeG = CFG._nodeGroups[targetName];
+  if(!nodeG) return;
   const amplitude = 0.05 + norm * 0.22;
   const cycles = 3 + norm * 6;
   const pulseDuration = 750 + norm * 350;
@@ -838,14 +850,15 @@ function pulseScaleDependent(norm){
     const t = Math.min(1, elapsed / pulseDuration);
     const damp = 1 - t;
     const scale = 1 + amplitude * damp * Math.sin(t * Math.PI * 2 * cycles);
-    depG.setAttribute('transform', `translate(${cx},${cy}) scale(${scale}) translate(${-cx},${-cy})`);
-    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+    nodeG.setAttribute('transform', `scale(${scale})`);
+    if(t < 1) requestAnimationFrame(step); else nodeG.setAttribute('transform', '');
   }
   requestAnimationFrame(step);
 }
 
-function shakeHorizontalDependent(norm){
-  const depG = CFG._depG;
+function shakeHorizontalNode(targetName, norm){
+  const nodeG = CFG._nodeGroups[targetName];
+  if(!nodeG) return;
   const amplitude = 5 + norm * 32;
   const cycles = 3 + norm * 6;
   const pulseDuration = 750 + norm * 350;
@@ -855,14 +868,15 @@ function shakeHorizontalDependent(norm){
     const t = Math.min(1, elapsed / pulseDuration);
     const damp = 1 - t;
     const dx = amplitude * damp * Math.sin(t * Math.PI * 2 * cycles);
-    depG.setAttribute('transform', `translate(${dx},0)`);
-    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+    nodeG.setAttribute('transform', `translate(${dx},0)`);
+    if(t < 1) requestAnimationFrame(step); else nodeG.setAttribute('transform', '');
   }
   requestAnimationFrame(step);
 }
 
-function shakeCircularDependent(norm){
-  const depG = CFG._depG;
+function shakeCircularNode(targetName, norm){
+  const nodeG = CFG._nodeGroups[targetName];
+  if(!nodeG) return;
   const amplitude = 4 + norm * 20;
   const cycles = 3 + norm * 6;
   const pulseDuration = 750 + norm * 350;
@@ -874,11 +888,13 @@ function shakeCircularDependent(norm){
     const angle = t * Math.PI * 2 * cycles;
     const dx = amplitude * damp * Math.cos(angle);
     const dy = amplitude * damp * Math.sin(angle);
-    depG.setAttribute('transform', `translate(${dx},${dy})`);
-    if(t < 1) requestAnimationFrame(step); else depG.setAttribute('transform', '');
+    nodeG.setAttribute('transform', `translate(${dx},${dy})`);
+    if(t < 1) requestAnimationFrame(step); else nodeG.setAttribute('transform', '');
   }
   requestAnimationFrame(step);
 }
+
+cargarEjemplo();
 </script>
 </body>
 </html>
